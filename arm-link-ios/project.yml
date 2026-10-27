@@ -6,15 +6,19 @@ options:
 settings:
   base:
     SWIFT_VERSION: '5.0'
-    MARKETING_VERSION: '1.2.1'
-    CURRENT_PROJECT_VERSION: '4'
+    MARKETING_VERSION: '1.2.2'
+    CURRENT_PROJECT_VERSION: '5'
     CODE_SIGNING_ALLOWED: NO
     TARGETED_DEVICE_FAMILY: '1,2'
 targets:
   ArmLink:
     type: application
     platform: iOS
-    sources: [App]
+    sources:
+      - path: App
+        excludes: [ControllerFix.js]
+      - path: App/ControllerFix.js
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.yangk1nghh.ArmLink
@@ -31,3 +35,4 @@ schemes:
     build:
       targets:
         ArmLink: all
+

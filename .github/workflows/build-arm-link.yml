@@ -14,6 +14,10 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - name: Test smooth controller and bundle patch
+        run: |
+          node --test arm-link-ios/Tests/*.test.mjs
+          python3 arm-link-ios/scripts/bundle-controller.py
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Generate ARM Link project
@@ -37,3 +41,4 @@ jobs:
           path: ArmLink-unsigned.ipa
           if-no-files-found: error
           retention-days: 30
+

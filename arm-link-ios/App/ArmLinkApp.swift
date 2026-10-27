@@ -25,7 +25,34 @@ final class BrowserModel: NSObject, ObservableObject, WKNavigationDelegate, WKUI
         webView.backgroundColor = UIColor(red: 0.047, green: 0.067, blue: 0.098, alpha: 1)
         webView.scrollView.backgroundColor = webView.backgroundColor
         webView.allowsBackForwardNavigationGestures = true
-        loadHome()
+        installSmoothController()
+    }
+    // Bundle the controller fix so this IPA does not depend on a Site redeployment.
+    private func installSmoothController() {
+        guard let sourceURL = Bundle.main.url(forResource: "ControllerFix", withExtension: "js"),
+              let source = try? String(contentsOf: sourceURL, encoding: .utf8) else {
+            loading = false
+            errorMessage = "控制修正檔案遺失，請重新安裝 ARM Link。"
+            return
+        }
+        webView.configuration.userContentController.addUserScript(
+            WKUserScript(source: source, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
+        )
+        let rules = #"[{"trigger":{"url-filter":"^https://arduino-arm-3d-viewer\\.freshauk74\\.chatgpt\\.site/viewer/app\\.js([?].*)?$","resource-type":["script"]},"action":{"type":"block"}}]"#
+        WKContentRuleListStore.default().compileContentRuleList(
+            forIdentifier: "ArmLinkSmoothControllerV1", encodedContentRuleList: rules
+        ) { [weak self] rule, error in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                guard let rule else {
+                    self.loading = false
+                    self.errorMessage = "無法啟用平滑控制，請重新開啟 App。"
+                    return
+                }
+                self.webView.configuration.userContentController.add(rule)
+                self.loadHome()
+            }
+        }
     }
     func loadHome() {
         errorMessage = nil
@@ -115,7 +142,7 @@ struct ControllerView: View {
                         Text("2. 兩邊保持開啟並連上網路，調整任一關節即可同步。")
                         Text("3. 儲存多個姿態後按播放，兩邊會依相同時間軸執行。")
                         Text("左搖桿控制底座與肩部，右搖桿控制手腕旋轉與肘部；直向拉桿控制手腕俯仰和夾爪。也可按開始 XYZ 讓模型自動運動。")
-                        Text("同步約每 0.5 秒檢查一次，實際延遲取決於網路。切回 App 後會重新取得最新狀態。")
+                        Text("本機搖桿逐畫面更新，跨裝置同步速度取決於網路。放開搖桿即停止，切回 App 後會重新取得最新狀態。")
                             .font(.footnote).foregroundStyle(.secondary)
                     }
                     Section("電腦網站") {
@@ -142,3 +169,4 @@ struct ControllerView: View {
         }
     }
 }
+
